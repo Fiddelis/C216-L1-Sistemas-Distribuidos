@@ -1,22 +1,23 @@
+BACKEND_DIR ?= backend
 POETRY ?= poetry
 APP ?= app.main:app
 
 .PHONY: install test lint format run help
 
 install:
-	$(POETRY) install
+	cd $(BACKEND_DIR) && $(POETRY) install
 
 test:
-	$(POETRY) run pytest
+	cd $(BACKEND_DIR) && $(POETRY) run pytest
 
 lint:
-	$(POETRY) run ruff check .
+	cd $(BACKEND_DIR) && $(POETRY) run ruff check .
 
 format:
-	$(POETRY) run ruff format .
+	cd $(BACKEND_DIR) && $(POETRY) run ruff format .
 
 run:
-	$(POETRY) run uvicorn $(APP) --reload
+	cd $(BACKEND_DIR) && $(POETRY) run uvicorn $(APP) --reload
 
 help:
 	@echo "Comandos disponíveis:"
