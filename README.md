@@ -4,5 +4,5 @@ Repositório para a Prática 1 da disciplina de Sistemas Distribuídos.
 
 ## Backend
 
-Os comandos do backend estão disponíveis em `backend/Makefile`.
-
+Os comandos do projeto estão disponíveis em `Makefile` e executam as tarefas
+do backend dentro de `backend/`.
