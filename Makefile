@@ -3,13 +3,19 @@ POETRY ?= poetry
 APP ?= app.main:app
 COMPOSE ?= docker compose
 
-.PHONY: install test lint format run docker-build docker-up docker-down docker-ps docker-logs docker-restart help
+.PHONY: install test test-unit test-integration lint format run docker-build docker-up docker-down docker-ps docker-logs docker-restart help
 
 install:
 	cd $(BACKEND_DIR) && $(POETRY) install
 
 test:
 	cd $(BACKEND_DIR) && $(POETRY) run pytest
+
+test-unit:
+	cd $(BACKEND_DIR) && $(POETRY) run pytest tests/test_main.py
+
+test-integration:
+	cd $(BACKEND_DIR) && $(POETRY) run pytest tests/test_api.py
 
 lint:
 	cd $(BACKEND_DIR) && $(POETRY) run ruff check .
@@ -42,6 +48,8 @@ help:
 	@echo "Comandos disponíveis:"
 	@echo "  make install  - instala dependências"
 	@echo "  make test     - executa testes"
+	@echo "  make test-unit        - executa testes unitários"
+	@echo "  make test-integration - executa testes HTTP"
 	@echo "  make lint     - verifica o código"
 	@echo "  make format   - formata o código"
 	@echo "  make run      - inicia a API"
