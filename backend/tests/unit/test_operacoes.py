@@ -1,6 +1,6 @@
 import pytest
 
-from app.main import hello, home, soma
+from app.services.operacoes import hello, home, soma
 
 
 @pytest.mark.parametrize(
