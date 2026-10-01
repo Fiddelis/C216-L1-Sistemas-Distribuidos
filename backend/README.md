@@ -14,7 +14,7 @@ API FastAPI organizada em `src/app/api/routes`, `src/app/schemas` e
 | PATCH | `/cars/{car_id}` | Altera apenas os campos enviados e não nulos |
 | DELETE | `/cars/{car_id}` | Devolve status 204 sem corpo |
 
-As respostas são demonstrativas, como no PR usado como referência. Não há
+As respostas são demonstrativas. Não há
 persistência: POST, PUT, PATCH e DELETE não alteram os exemplos das consultas.
 O serviço PostgreSQL da Prática II continua disponível no Compose, mas não é
 usado por estas rotas. As rotas `/` e `/hello/{name}` continuam disponíveis.

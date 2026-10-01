@@ -1,6 +1,6 @@
 from app.schemas.car import Car, CarCreate, CarPatch, CarUpdate
 
-# Respostas demonstrativas, sem persistência, como no PR de referência.
+# Respostas demonstrativas, sem persistência.
 CARROS_EXEMPLO = (
     Car(id=1, marca="Toyota", modelo="Corolla", ano=2024, cor="Prata", preco=150000),
     Car(id=2, marca="Honda", modelo="Civic", ano=2023, cor="Preto", preco=140000),
