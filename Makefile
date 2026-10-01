@@ -12,10 +12,10 @@ test:
 	cd $(BACKEND_DIR) && $(POETRY) run pytest
 
 test-unit:
-	cd $(BACKEND_DIR) && $(POETRY) run pytest tests/test_main.py
+	cd $(BACKEND_DIR) && $(POETRY) run pytest tests/unit
 
 test-integration:
-	cd $(BACKEND_DIR) && $(POETRY) run pytest tests/test_api.py
+	cd $(BACKEND_DIR) && $(POETRY) run pytest tests/integration
 
 lint:
 	cd $(BACKEND_DIR) && $(POETRY) run ruff check .

@@ -1,17 +1,6 @@
 from fastapi import FastAPI
 
-app = FastAPI()
+from app.api.router import router
 
-
-@app.get("/")
-def home():
-    return {"message": "Olá, Sistemas Distribuídos"}
-
-
-@app.get("/hello/{name}")
-def hello(name: str):
-    return {"message": f"Olá, {name}"}
-
-
-def soma(a, b):
-    return a + b
+app = FastAPI(title="C216 - Sistemas Distribuídos")
+app.include_router(router)
