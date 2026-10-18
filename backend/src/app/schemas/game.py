@@ -30,4 +30,6 @@ class GamePatch(BaseModel):
 
 
 class Game(GameBase):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
     id: int = Field(gt=0)
