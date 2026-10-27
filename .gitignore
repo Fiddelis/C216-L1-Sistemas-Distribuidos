@@ -12,4 +12,8 @@ dist/
 build/
 *.egg-info/
 poetry.toml
+node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
 
