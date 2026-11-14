@@ -72,7 +72,7 @@ export default function GameForm({ game, onSave, onCancel }) {
         {field("preco", "Preço (R$)")}
       </div>
       <p className="form-note">
-        Todos os campos são obrigatórios. Os dados ficam apenas nesta sessão.
+        Todos os campos são obrigatórios. Os dados são salvos na API.
       </p>
       <div className="modal-actions">
         <button type="button" className="button secondary" onClick={onCancel}>

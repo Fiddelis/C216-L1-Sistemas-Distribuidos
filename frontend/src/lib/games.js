@@ -57,33 +57,3 @@ export const currency = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
     value,
   );
-
-export function createLibrary(games) {
-  return {
-    games: games.map((game) => ({ ...game })),
-    nextId: Math.max(0, ...games.map((game) => game.id)) + 1,
-  };
-}
-
-export function libraryReducer(state, action) {
-  if (action.type === "save") {
-    if (action.id != null) {
-      return {
-        ...state,
-        games: state.games.map((game) =>
-          game.id === action.id ? { ...action.game, id: game.id } : game,
-        ),
-      };
-    }
-    return {
-      games: [...state.games, { ...action.game, id: state.nextId }],
-      nextId: state.nextId + 1,
-    };
-  }
-  if (action.type === "remove")
-    return {
-      ...state,
-      games: state.games.filter((game) => game.id !== action.id),
-    };
-  return state;
-}

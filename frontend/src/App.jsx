@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   Check,
   Gamepad2,
   Library,
@@ -7,19 +8,22 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { useReducer, useState } from "react";
+import { useEffect, useState } from "react";
 import GameCard from "./components/GameCard.jsx";
 import GameForm from "./components/GameForm.jsx";
 import Modal from "./components/Modal.jsx";
-import { sampleGames } from "./data/games.js";
-import { createLibrary, filterGames, libraryReducer } from "./lib/games.js";
+import { filterGames } from "./lib/games.js";
+import {
+  createGame,
+  deleteGame,
+  listGames,
+  replaceGame,
+} from "./services/games.js";
 
 export default function App() {
-  const [library, dispatch] = useReducer(
-    libraryReducer,
-    sampleGames,
-    createLibrary,
-  );
+  const [games, setGames] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("");
   const [platform, setPlatform] = useState("");
@@ -27,35 +31,86 @@ export default function App() {
   const [editor, setEditor] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [notice, setNotice] = useState("");
-  const games = filterGames(library.games, { search, genre, platform, sort });
-  const uniqueGenres = [
-    ...new Set(library.games.map((game) => game.genero)),
-  ].sort();
+  const [error, setError] = useState("");
+  const visible = filterGames(games, { search, genre, platform, sort });
+  const uniqueGenres = [...new Set(games.map((game) => game.genero))].sort();
   const uniquePlatforms = [
-    ...new Set(library.games.map((game) => game.plataforma)),
+    ...new Set(games.map((game) => game.plataforma)),
   ].sort();
   const filtered = !!(search || genre || platform);
+
+  async function refreshGames() {
+    const data = await listGames();
+    setGames(data);
+    return data;
+  }
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await listGames();
+        if (active) setGames(data);
+      } catch (err) {
+        if (active) {
+          setGames([]);
+          setError(err.message || "Não foi possível carregar os jogos.");
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   function resetFilters() {
     setSearch("");
     setGenre("");
     setPlatform("");
   }
-  function save(game) {
-    dispatch({ type: "save", game, id: editor.game?.id });
-    setNotice(
-      editor.game ? "Alterações salvas." : "Jogo adicionado à biblioteca.",
-    );
-    resetFilters();
-    setEditor(null);
+
+  async function save(game) {
+    setBusy(true);
+    setError("");
+    try {
+      if (editor.game?.id != null) {
+        await replaceGame(editor.game.id, game);
+        setNotice("Alterações salvas.");
+      } else {
+        await createGame(game);
+        setNotice("Jogo adicionado à biblioteca.");
+      }
+      await refreshGames();
+      resetFilters();
+      setEditor(null);
+    } catch (err) {
+      setError(err.message || "Não foi possível salvar o jogo.");
+    } finally {
+      setBusy(false);
+    }
   }
-  function remove() {
-    dispatch({ type: "remove", id: deleting.id });
-    setNotice(`“${deleting.titulo}” foi removido da biblioteca.`);
-    setDeleting(null);
-    // Um filtro de categoria removida não deve ficar oculto no select.
-    setGenre("");
-    setPlatform("");
+
+  async function remove() {
+    setBusy(true);
+    setError("");
+    try {
+      await deleteGame(deleting.id);
+      setNotice(`“${deleting.titulo}” foi removido da biblioteca.`);
+      setDeleting(null);
+      setGenre("");
+      setPlatform("");
+      await refreshGames();
+    } catch (err) {
+      setError(err.message || "Não foi possível remover o jogo.");
+    } finally {
+      setBusy(false);
+    }
   }
+
   return (
     <div className="app-shell">
       <a className="skip-link" href="#catalogo">
@@ -98,7 +153,7 @@ export default function App() {
             </div>
             <span className="summary-label">SUA COLEÇÃO</span>
             <div className="summary-number">
-              {String(library.games.length).padStart(2, "0")}
+              {String(games.length).padStart(2, "0")}
               <span>jogos no catálogo</span>
             </div>
             <div className="summary-footer">
@@ -119,11 +174,12 @@ export default function App() {
           <div className="section-heading">
             <div className="flex items-center gap-3">
               <h2 id="catalog-title">Sua coleção</h2>
-              <span className="count-badge">{library.games.length}</span>
+              <span className="count-badge">{games.length}</span>
             </div>
             <button
               className="button primary"
               type="button"
+              disabled={busy || loading}
               onClick={() => setEditor({ game: null })}
             >
               <Plus size={18} />
@@ -178,8 +234,8 @@ export default function App() {
           <div className="results-bar">
             <div>
               <span>
-                {games.length}{" "}
-                {games.length === 1 ? "jogo encontrado" : "jogos encontrados"}
+                {visible.length}{" "}
+                {visible.length === 1 ? "jogo encontrado" : "jogos encontrados"}
               </span>
               {filtered && (
                 <button
@@ -204,9 +260,14 @@ export default function App() {
               </select>
             </div>
           </div>
-          {games.length ? (
+          {loading ? (
+            <div className="empty-state" role="status">
+              <h3>Carregando biblioteca...</h3>
+              <p>Buscando os jogos na API.</p>
+            </div>
+          ) : visible.length ? (
             <div className="games-grid">
-              {games.map((game) => (
+              {visible.map((game) => (
                 <GameCard
                   key={game.id}
                   game={game}
@@ -257,12 +318,26 @@ export default function App() {
               </>
             )}
           </div>
+          {error && (
+            <div className="notice notice-error" role="alert">
+              <AlertCircle size={17} />
+              <span>{error}</span>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Fechar erro"
+                onClick={() => setError("")}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
         </section>
       </main>
       <footer className="site-footer">
         <span className="footer-brand">checkpoint.</span>
         <p>Seu próximo jogo começa com uma boa escolha.</p>
-        <span>Dados reiniciam ao recarregar</span>
+        <span>Dados sincronizados com a API</span>
       </footer>
       {editor && (
         <Modal
@@ -270,7 +345,7 @@ export default function App() {
           subtitle={
             editor.game ? "ATUALIZE SUA BIBLIOTECA" : "PRÓXIMA AVENTURA"
           }
-          onClose={() => setEditor(null)}
+          onClose={() => !busy && setEditor(null)}
         >
           <GameForm
             game={editor.game}
@@ -283,21 +358,26 @@ export default function App() {
         <Modal
           title="Remover este jogo?"
           subtitle="SUA BIBLIOTECA"
-          onClose={() => setDeleting(null)}
+          onClose={() => !busy && setDeleting(null)}
         >
           <p className="delete-description">
-            O jogo <strong>{deleting.titulo}</strong> será removido da coleção
-            desta sessão.
+            O jogo <strong>{deleting.titulo}</strong> será removido da coleção.
           </p>
           <div className="modal-actions">
             <button
               className="button secondary"
               type="button"
+              disabled={busy}
               onClick={() => setDeleting(null)}
             >
               Manter jogo
             </button>
-            <button className="button danger" type="button" onClick={remove}>
+            <button
+              className="button danger"
+              type="button"
+              disabled={busy}
+              onClick={remove}
+            >
               Sim, remover jogo
             </button>
           </div>

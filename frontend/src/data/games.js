@@ -1,4 +1,4 @@
-// Dados fictícios para demonstração. Alterações duram até recarregar a página.
+// Dados de exemplo usados apenas pelos testes unitários de filtros.
 export const sampleGames = [
   {
     id: 1,

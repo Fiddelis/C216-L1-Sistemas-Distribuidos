@@ -629,6 +629,9 @@ h2 {
   margin-top: 20px;
   min-height: 35px;
 }
+.notice-error {
+  color: #a14d3a;
+}
 .notice .icon-button {
   margin-left: 3px;
 }
