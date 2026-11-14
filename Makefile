@@ -5,12 +5,12 @@ COMPOSE ?= docker compose
 FRONTEND_DIR ?= frontend
 NPM ?= npm
 
-.PHONY: install test test-unit test-integration lint format run db-upgrade db-migration db-current db-history docker-db-upgrade docker-build docker-up docker-down docker-ps docker-logs docker-restart help
+.PHONY: install test test-backend test-unit test-integration lint format run db-upgrade db-migration db-current db-history docker-db-upgrade docker-build docker-up docker-down docker-ps docker-logs docker-restart help
 
 install:
 	cd $(BACKEND_DIR) && $(POETRY) install
 
-test:
+test-backend:
 	cd $(BACKEND_DIR) && $(POETRY) run pytest
 
 test-unit:
@@ -57,19 +57,20 @@ docker-ps:
 	$(COMPOSE) ps
 
 docker-logs:
-	$(COMPOSE) logs -f backend
+	$(COMPOSE) logs -f backend frontend
 
 docker-restart:
 	$(COMPOSE) restart
 
 help:
 	@echo "Comandos disponíveis:"
-	@echo "  make install  - instala dependências"
-	@echo "  make test     - executa testes"
-	@echo "  make test-unit        - executa testes unitários"
-	@echo "  make test-integration - executa testes HTTP"
-	@echo "  make lint     - verifica o código"
-	@echo "  make format   - formata o código"
+	@echo "  make install  - instala dependências do backend"
+	@echo "  make test     - executa todos os testes (backend + frontend + e2e)"
+	@echo "  make test-backend     - executa testes do backend"
+	@echo "  make test-unit        - executa testes unitários do backend"
+	@echo "  make test-integration - executa testes HTTP do backend"
+	@echo "  make lint     - verifica o código do backend"
+	@echo "  make format   - formata o código do backend"
 	@echo "  make run      - inicia a API"
 	@echo "  make db-upgrade     - aplica as migrations"
 	@echo '  make db-migration msg="descrição" - gera uma migration para revisão'
@@ -77,10 +78,10 @@ help:
 	@echo "  make db-history     - lista o histórico das migrations"
 	@echo "  make docker-db-upgrade - aplica migrations no container"
 	@echo "  make docker-build   - constrói as imagens"
-	@echo "  make docker-up      - inicia os serviços"
+	@echo "  make docker-up      - inicia db, API e frontend"
 	@echo "  make docker-down    - para os serviços"
 	@echo "  make docker-ps      - mostra o estado dos serviços"
-	@echo "  make docker-logs    - acompanha os logs do backend"
+	@echo "  make docker-logs    - acompanha os logs do backend e frontend"
 	@echo "  make docker-restart - reinicia os serviços"
 	@echo "  make front-install - instala dependências do frontend"
 	@echo "  make front-dev     - inicia o site em http://127.0.0.1:5173"
@@ -92,7 +93,7 @@ help:
 	@echo "  make front-test    - executa testes unitários e de componentes"
 	@echo "  make front-test-e2e - executa E2E com Chromium"
 
-.PHONY: front-install front-dev front-build front-preview front-lint front-format front-format-check front-check front-test front-test-unit front-test-integration front-test-e2e front-e2e-install
+.PHONY: front-install front-dev front-build front-preview front-lint front-format front-format-check front-check front-test front-test-unit front-test-integration front-test-e2e front-e2e-install test
 
 front-install:
 	cd $(FRONTEND_DIR) && $(NPM) ci
@@ -132,3 +133,5 @@ front-e2e-install:
 
 front-test-e2e:
 	cd $(FRONTEND_DIR) && $(NPM) run test:e2e
+
+test: test-backend front-test front-test-e2e

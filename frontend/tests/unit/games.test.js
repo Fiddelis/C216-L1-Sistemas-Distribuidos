@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { sampleGames } from "../../src/data/games.js";
 import {
-  createLibrary,
   currency,
   filterGames,
-  libraryReducer,
   normalizeGame,
   validateGame,
 } from "../../src/lib/games.js";
@@ -91,44 +89,5 @@ describe("busca, filtros e ordenação", () => {
   });
   it("formata BRL", () => {
     expect(currency(49.9).replace(/\s/g, " ")).toBe("R$ 49,90");
-  });
-});
-
-describe("biblioteca em memória", () => {
-  it("cria um jogo e não reutiliza ID após excluir", () => {
-    const original = createLibrary(sampleGames);
-    const created = libraryReducer(original, {
-      type: "save",
-      game: normalizeGame(valid),
-    });
-    expect(created.games.at(-1).id).toBe(7);
-    const removed = libraryReducer(created, { type: "remove", id: 7 });
-    const next = libraryReducer(removed, {
-      type: "save",
-      game: normalizeGame(valid),
-    });
-    expect(next.games.at(-1).id).toBe(8);
-    expect(original.games).toHaveLength(6);
-  });
-  it("edita preservando o ID", () => {
-    const state = libraryReducer(createLibrary(sampleGames), {
-      type: "save",
-      id: 1,
-      game: normalizeGame(valid),
-    });
-    expect(state.games[0].titulo).toBe("Novo jogo");
-    expect(state.games[0].id).toBe(1);
-    expect(state.games).toHaveLength(6);
-  });
-  it("exclui somente o jogo solicitado", () => {
-    const state = libraryReducer(createLibrary(sampleGames), {
-      type: "remove",
-      id: 2,
-    });
-    expect(state.games).toHaveLength(5);
-    expect(state.games.some((game) => game.id === 2)).toBe(false);
-  });
-  it("inicia um catálogo vazio com ID 1", () => {
-    expect(createLibrary([])).toEqual({ games: [], nextId: 1 });
   });
 });

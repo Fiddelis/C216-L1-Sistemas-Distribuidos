@@ -1,10 +1,13 @@
 import { expect, test } from "@playwright/test";
+import { installApiMock } from "./mockApi.js";
 
 test.beforeEach(async ({ page }) => {
+  await installApiMock(page);
   await page.goto("/");
+  await expect(page.getByRole("article")).toHaveCount(6);
 });
 
-test("cadastra, edita e remove um jogo", async ({ page }) => {
+test("cadastra, edita e remove um jogo via API", async ({ page }) => {
   await page
     .getByRole("button", { name: "Adicionar jogo", exact: true })
     .click();
@@ -83,17 +86,24 @@ test("ordena por preço e mantém a página sem rolagem horizontal", async ({
   expect(overflow).toBe(false);
 });
 
-test("reinicia alterações ao recarregar, sem chamar a API", async ({
-  page,
-}) => {
-  const apiCalls = [];
-  page.on("request", (request) => {
-    if (new URL(request.url()).port === "8000") apiCalls.push(request.url());
-  });
+test("persiste alterações após recarregar via API", async ({ page }) => {
   await page.getByRole("button", { name: "Excluir Ilhas Perdidas" }).click();
   await page.getByRole("button", { name: "Sim, remover jogo" }).click();
   await expect(page.getByRole("article")).toHaveCount(5);
   await page.reload();
-  await expect(page.getByRole("article")).toHaveCount(6);
-  expect(apiCalls).toEqual([]);
+  await expect(page.getByRole("article")).toHaveCount(5);
+  await expect(
+    page.getByRole("heading", { name: "Ilhas Perdidas" }),
+  ).toHaveCount(0);
+});
+
+test("mostra erro quando não consegue conectar à API", async ({ page }) => {
+  await page.unrouteAll({ behavior: "ignoreErrors" });
+  await page.route("http://127.0.0.1:8000/**", async (route) => {
+    await route.abort("failed");
+  });
+  await page.goto("/");
+  await expect(page.getByRole("alert")).toContainText(
+    "Não foi possível conectar à API.",
+  );
 });

@@ -3,8 +3,8 @@
 API de jogos com FastAPI, SQLAlchemy e PostgreSQL. As rotas ficam em
 `src/app/api/routes`, os contratos Pydantic em `schemas` e o modelo ORM em
 `models`. Os services usam repositories para acessar o banco. `database`
-configura o engine e a sessão por requisição. `main.py` registra os routers
-e o tratamento de jogo inexistente.
+configura o engine e a sessão por requisição. `main.py` registra os routers,
+o CORS com origens explícitas (`CORS_ORIGINS`) e o tratamento de jogo inexistente.
 
 ## Iniciar com Docker Compose
 
@@ -15,8 +15,9 @@ make docker-up
 make docker-ps
 ```
 
-O backend aguarda o PostgreSQL ficar saudável, aplica `alembic upgrade head`
-e inicia a API em `http://localhost:8000`. Consulte `/docs` para experimentar
+O Compose sobe PostgreSQL, API e frontend. O backend aguarda o banco ficar
+saudável, aplica `alembic upgrade head` e inicia em `http://localhost:8000`.
+O frontend fica em `http://127.0.0.1:5173`. Consulte `/docs` para experimentar
 as requisições. O banco começa sem jogos.
 
 O Compose usa `DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/c216`.

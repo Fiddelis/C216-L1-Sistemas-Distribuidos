@@ -2,17 +2,38 @@
 
 Repositório para as práticas da disciplina de Sistemas Distribuídos.
 
-## Frontend
+## Stack
 
-O [Checkpoint](frontend/README.md) é a interface da biblioteca de jogos.
-Use `make front-install` e `make front-dev` para abrir o site na porta 5173.
-Na Prática 6, o catálogo funciona em memória, sem integração com a API.
+O Compose sobe três serviços: PostgreSQL, API FastAPI e o frontend Checkpoint.
 
-## Backend
+```sh
+make docker-up
+```
 
-Os comandos do projeto estão disponíveis em `Makefile` e executam as tarefas
-do backend dentro de `backend/`.
+- Frontend: [http://127.0.0.1:5173](http://127.0.0.1:5173)
+- API / docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-Consulte [a documentação do backend](backend/README.md) para a estrutura da API,
-os endpoints de jogos, a persistência no PostgreSQL, as migrations e os comandos
-dos testes unitários e de integração.
+A Prática 7 integra o frontend à API: o catálogo deixa de usar estado local e
+passa a chamar os endpoints de jogos, com CORS explícito e mensagens de erro.
+
+## Desenvolvimento local
+
+```sh
+make docker-up
+# ou, só o banco + API no Compose e o Vite fora:
+make front-install
+make front-dev
+```
+
+Configure `VITE_API_URL` e `CORS_ORIGINS` conforme `.env.example`.
+
+## Testes
+
+```sh
+make test
+```
+
+Roda backend (pytest), frontend (Vitest) e E2E (Playwright) em um comando só.
+
+Consulte [frontend/README.md](frontend/README.md) e
+[backend/README.md](backend/README.md) para detalhes.
