@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir "poetry==${POETRY_VERSION}"
 
 COPY pyproject.toml poetry.lock README.md ./
 COPY src ./src
+COPY alembic.ini ./
+COPY alembic ./alembic
 
 RUN poetry install --only main --no-ansi
 
