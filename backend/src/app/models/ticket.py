@@ -54,3 +54,13 @@ class Ticket(Base):
     )
 
     owner = relationship("User", back_populates="tickets")
+    messages = relationship(
+        "TicketMessage",
+        back_populates="ticket",
+        cascade="all, delete-orphan",
+    )
+    events = relationship(
+        "TicketEvent",
+        back_populates="ticket",
+        cascade="all, delete-orphan",
+    )

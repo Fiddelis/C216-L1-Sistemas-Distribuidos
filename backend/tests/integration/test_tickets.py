@@ -136,3 +136,52 @@ def test_cors_allows_actor_header(client):
     assert response.status_code == 200
     allow = response.headers.get("access-control-allow-headers", "").lower()
     assert "x-actor-id" in allow
+
+
+def test_status_history_records_who_moved_the_ticket(client):
+    created = _create(client)
+    opened = created.json()["events"]
+    assert opened[0]["from_status"] is None
+    assert opened[0]["to_status"] == "Aberto"
+    assert opened[0]["actor_name"] == "Ana Silva"
+    assert opened[0]["actor_role"] == "student"
+
+    ticket_id = created.json()["id"]
+    move = client.post(
+        f"/tickets/{ticket_id}/transitions",
+        json={"to_status": "Em andamento"},
+        headers=actor_headers("it-carla"),
+    )
+    assert move.status_code == 200
+    trail = [
+        (event["from_status"], event["to_status"], event["actor_name"])
+        for event in move.json()["events"]
+    ]
+    assert trail == [
+        (None, "Aberto", "Ana Silva"),
+        ("Aberto", "Em andamento", "Carla Mendes"),
+    ]
+
+
+def test_message_stays_unread_until_the_other_person_opens_it(client):
+    created = _create(client, "stu-ana")
+    ticket_id = created.json()["id"]
+
+    sent = client.post(
+        f"/tickets/{ticket_id}/messages",
+        json={"body": "Pode testar de novo?"},
+        headers=actor_headers("it-carla"),
+    )
+    assert sent.status_code == 200
+    assert sent.json()["unread_message"] is None
+
+    ana_list = client.get("/tickets", headers=actor_headers("stu-ana"))
+    row = next(item for item in ana_list.json() if item["id"] == ticket_id)
+    assert row["unread_message"]["body"] == "Pode testar de novo?"
+
+    opened = client.get(
+        f"/tickets/{ticket_id}", headers=actor_headers("stu-ana")
+    )
+    assert opened.status_code == 200
+    assert opened.json()["unread_message"] is None
+    assert opened.json()["messages"][0]["author_name"] == "Carla Mendes"

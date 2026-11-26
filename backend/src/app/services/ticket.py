@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
+from app.models.event import TicketEvent
+from app.models.message import TicketMessage
 from app.models.ticket import Ticket
 from app.models.user import User
 from app.repositories import ticket as ticket_repo
@@ -70,7 +72,55 @@ def allowed_patch_fields(actor: Actor, ticket: Ticket) -> list[str]:
     return []
 
 
-def enrich(actor: Actor, ticket: Ticket) -> dict:
+def _message_dict(message: TicketMessage) -> dict:
+    author = message.author
+    return {
+        "id": message.id,
+        "author_user_id": message.author_user_id,
+        "author_name": author.name if author is not None else message.author_user_id,
+        "author_role": author.role if author is not None else "student",
+        "body": message.body,
+        "created_at": message.created_at,
+    }
+
+
+def _is_unread(message: TicketMessage, actor: Actor, last_read) -> bool:
+    if message.author_user_id == actor.id:
+        return False
+    if last_read is None:
+        return True
+    created = message.created_at
+    read_at = last_read
+    if created.tzinfo is None and read_at.tzinfo is not None:
+        read_at = read_at.replace(tzinfo=None)
+    if created.tzinfo is not None and read_at.tzinfo is None:
+        created = created.replace(tzinfo=None)
+    return created > read_at
+
+
+def _event_dict(event: TicketEvent) -> dict:
+    actor = event.actor
+    return {
+        "id": event.id,
+        "actor_user_id": event.actor_user_id,
+        "actor_name": actor.name if actor is not None else event.actor_user_id,
+        "actor_role": actor.role if actor is not None else "student",
+        "from_status": event.from_status,
+        "to_status": event.to_status,
+        "created_at": event.created_at,
+    }
+
+
+def enrich(
+    actor: Actor,
+    ticket: Ticket,
+    messages: list[TicketMessage] | None = None,
+    last_read=None,
+    events: list[TicketEvent] | None = None,
+) -> dict:
+    thread = messages or []
+    unread = [item for item in thread if _is_unread(item, actor, last_read)]
+    latest = unread[-1] if unread else None
     is_owner = _is_owner(actor, ticket)
     return {
         "id": ticket.id,
@@ -86,18 +136,43 @@ def enrich(actor: Actor, ticket: Ticket) -> dict:
             actor.role, is_owner, ticket.status
         ),
         "allowed_patch_fields": allowed_patch_fields(actor, ticket),
+        "messages": [_message_dict(item) for item in thread],
+        "unread_message": _message_dict(latest) if latest else None,
+        "events": [_event_dict(item) for item in (events or [])],
     }
+
+
+def _bundle(session: Session, actor: Actor, tickets: list[Ticket]) -> list[dict]:
+    ids = [ticket.id for ticket in tickets]
+    grouped: dict[int, list[TicketMessage]] = {ticket_id: [] for ticket_id in ids}
+    for message in ticket_repo.list_messages(session, ids):
+        grouped.setdefault(message.ticket_id, []).append(message)
+    reads = ticket_repo.list_reads(session, actor.id, ids)
+    history: dict[int, list[TicketEvent]] = {ticket_id: [] for ticket_id in ids}
+    for event in ticket_repo.list_events(session, ids):
+        history.setdefault(event.ticket_id, []).append(event)
+    return [
+        enrich(
+            actor,
+            ticket,
+            grouped.get(ticket.id, []),
+            reads.get(ticket.id),
+            history.get(ticket.id, []),
+        )
+        for ticket in tickets
+    ]
 
 
 def list_tickets(session: Session, actor: Actor) -> list[dict]:
     owner_id = actor.id if actor.role == "student" else None
     tickets = ticket_repo.list_tickets(session, owner_user_id=owner_id)
-    return [enrich(actor, ticket) for ticket in tickets]
+    return _bundle(session, actor, tickets)
 
 
 def get_ticket(session: Session, actor: Actor, ticket_id: int) -> dict:
     ticket = _ensure_visible(actor, ticket_repo.get_ticket(session, ticket_id))
-    return enrich(actor, ticket)
+    ticket_repo.mark_read(session, ticket_id=ticket.id, user_id=actor.id)
+    return _bundle(session, actor, [ticket])[0]
 
 
 def create_ticket(session: Session, actor: Actor, data: TicketCreate) -> dict:
@@ -111,7 +186,7 @@ def create_ticket(session: Session, actor: Actor, data: TicketCreate) -> dict:
         priority="media",
         owner_user_id=actor.id,
     )
-    return enrich(actor, ticket)
+    return _bundle(session, actor, [ticket])[0]
 
 
 def update_ticket(
@@ -121,7 +196,7 @@ def update_ticket(
     allowed = set(allowed_patch_fields(actor, ticket))
     payload = data.model_dump(exclude_unset=True)
     if not payload:
-        return enrich(actor, ticket)
+        return _bundle(session, actor, [ticket])[0]
     for field in payload:
         if field not in allowed:
             raise Forbidden()
@@ -130,7 +205,7 @@ def update_ticket(
         for key, value in payload.items()
     }
     ticket = ticket_repo.update_fields(session, ticket, values)
-    return enrich(actor, ticket)
+    return _bundle(session, actor, [ticket])[0]
 
 
 def transition_ticket(
@@ -145,8 +220,10 @@ def transition_ticket(
         actor.role, is_owner, ticket.status, to_status
     ):
         raise Forbidden()
-    ticket = ticket_repo.update_status(session, ticket, to_status)
-    return enrich(actor, ticket)
+    ticket = ticket_repo.update_status(
+        session, ticket, to_status, actor_user_id=actor.id
+    )
+    return _bundle(session, actor, [ticket])[0]
 
 
 def delete_ticket(session: Session, actor: Actor, ticket_id: int) -> None:
@@ -155,6 +232,24 @@ def delete_ticket(session: Session, actor: Actor, ticket_id: int) -> None:
         ticket_repo.delete_ticket(session, ticket)
         return
     raise Forbidden()
+
+
+def add_message(session: Session, actor: Actor, ticket_id: int, body: str) -> dict:
+    ticket = _ensure_visible(actor, ticket_repo.get_ticket(session, ticket_id))
+    if actor.role == "student" and not _is_owner(actor, ticket):
+        raise TicketNotFound()
+    if actor.role not in {"student", "it"}:
+        raise Forbidden()
+    if ticket.status == "Fechado":
+        raise Forbidden()
+    ticket_repo.add_message(
+        session,
+        ticket_id=ticket.id,
+        author_user_id=actor.id,
+        body=body.strip(),
+    )
+    ticket_repo.mark_read(session, ticket_id=ticket.id, user_id=actor.id)
+    return _bundle(session, actor, [ticket])[0]
 
 
 def list_actors(session: Session) -> list[User]:

@@ -7,6 +7,7 @@ from app.api.deps import get_actor
 from app.database.session import get_session
 from app.schemas.ticket import (
     ActorRead,
+    MessageCreate,
     TicketCreate,
     TicketRead,
     TicketUpdate,
@@ -73,6 +74,16 @@ def transition_ticket(
     return ticket_service.transition_ticket(
         session, actor, ticket_id, payload.to_status.value
     )
+
+
+@router.post("/tickets/{ticket_id}/messages", response_model=TicketRead)
+def create_message(
+    ticket_id: int,
+    payload: MessageCreate,
+    session: Annotated[Session, Depends(get_session)],
+    actor: Annotated[Actor, Depends(get_actor)],
+):
+    return ticket_service.add_message(session, actor, ticket_id, payload.body)
 
 
 @router.delete("/tickets/{ticket_id}", status_code=status.HTTP_204_NO_CONTENT)

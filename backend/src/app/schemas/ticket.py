@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Status(StrEnum):
@@ -52,6 +52,37 @@ class ActorRead(BaseModel):
     role: Literal["student", "it"]
 
 
+class MessageRead(BaseModel):
+    id: int
+    author_user_id: str
+    author_name: str
+    author_role: Literal["student", "it"]
+    body: str
+    created_at: datetime
+
+
+class MessageCreate(BaseModel):
+    body: str = Field(min_length=1)
+
+    @field_validator("body")
+    @classmethod
+    def strip_body(cls, value: str) -> str:
+        text = value.strip()
+        if not text:
+            raise ValueError("mensagem vazia")
+        return text
+
+
+class EventRead(BaseModel):
+    id: int
+    actor_user_id: str
+    actor_name: str
+    actor_role: Literal["student", "it"]
+    from_status: Status | None
+    to_status: Status
+    created_at: datetime
+
+
 class TicketRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,3 +97,6 @@ class TicketRead(BaseModel):
     updated_at: datetime
     allowed_transitions: list[Status] = []
     allowed_patch_fields: list[str] = []
+    messages: list[MessageRead] = []
+    unread_message: MessageRead | None = None
+    events: list[EventRead] = []

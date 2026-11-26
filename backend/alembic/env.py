@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, pool
 from alembic import context
 from app.database.base import Base
 from app.database.session import get_database_url
-from app.models import Ticket, User  # noqa: F401
+from app.models import Ticket, TicketEvent, User  # noqa: F401
 
 target_metadata = Base.metadata
 
