@@ -16,6 +16,9 @@ type Props = {
   submitLabel: string;
   onSubmit: (payload: TicketPatch & TicketCreate) => Promise<void>;
   allowedFields?: string[];
+  formId?: string;
+  hideSubmit?: boolean;
+  onBusy?: (busy: boolean) => void;
 };
 
 const categories: Category[] = ["rede", "software", "hardware", "conta"];
@@ -26,6 +29,9 @@ export function TicketForm({
   submitLabel,
   onSubmit,
   allowedFields,
+  formId,
+  hideSubmit = false,
+  onBusy,
 }: Props) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -45,6 +51,7 @@ export function TicketForm({
     event.preventDefault();
     setPending(true);
     setError(null);
+    onBusy?.(true);
     try {
       const payload: TicketPatch & TicketCreate = {
         title,
@@ -57,11 +64,12 @@ export function TicketForm({
       setError(err instanceof Error ? err.message : "Falha ao salvar");
     } finally {
       setPending(false);
+      onBusy?.(false);
     }
   }
 
   return (
-    <form className="space-y-3" onSubmit={handleSubmit}>
+    <form id={formId} className="space-y-3" onSubmit={handleSubmit}>
       {can("title") && (
         <label className="block space-y-1 text-sm" htmlFor="ticket-title">
           Título
@@ -118,9 +126,11 @@ export function TicketForm({
         </label>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <Button type="submit" disabled={pending}>
-        {pending ? "Salvando…" : submitLabel}
-      </Button>
+      {!hideSubmit && (
+        <Button type="submit" disabled={pending}>
+          {pending ? "Salvando…" : submitLabel}
+        </Button>
+      )}
     </form>
   );
 }

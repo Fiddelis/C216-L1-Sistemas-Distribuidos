@@ -12,11 +12,17 @@ import { MetricsPanel } from "@/components/MetricsPanel";
 import { ProgressiveTicketComposer } from "@/components/ProgressiveTicketComposer";
 import { TicketDetail } from "@/components/TicketDetail";
 import { TicketList } from "@/components/TicketList";
+import { FilterSelect } from "@/components/ui/filter-select";
 import { useActor } from "@/lib/actor";
+import { categoryLabel, priorityLabel } from "@/lib/labels";
+import { notifyTicketsChanged } from "@/lib/ticket-events";
 import {
+  type Category,
   createTicket,
   getTicket,
   listTickets,
+  type Priority,
+  type Status,
   type Ticket,
 } from "@/services/tickets";
 
@@ -55,45 +61,114 @@ function useTickets() {
 function HomePage() {
   const { actor } = useActor();
   const { tickets, setTickets, loading, error } = useTickets();
+  const [status, setStatus] = useState<Status | "all">("all");
+  const [category, setCategory] = useState<Category | "all">("all");
+  const [priority, setPriority] = useState<Priority | "all">("all");
 
   if (!actor) return null;
 
   const isStudent = actor.role === "student";
+  const filtered = tickets.filter((ticket) => {
+    if (status !== "all" && ticket.status !== status) return false;
+    if (category !== "all" && ticket.category !== category) return false;
+    if (priority !== "all" && ticket.priority !== priority) return false;
+    return true;
+  });
+  const filtering =
+    status !== "all" || category !== "all" || priority !== "all";
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div>
       {isStudent && (
-        <div className="text-center">
-          <p className="mb-2 inline-flex rounded-full border border-[var(--cf-border)] bg-white px-3 py-1 text-xs text-[var(--cf-muted)]">
+        <section className="border-b border-[var(--cf-border)] px-6 py-8 sm:px-8">
+          <p className="text-[11px] font-medium tracking-[0.18em] text-zinc-400 uppercase">
             Abrir um chamado
           </p>
-          <h2 className="text-2xl font-semibold tracking-tight">
+          <h2 className="mt-2 max-w-xl text-4xl font-semibold tracking-tight">
             Como podemos ajudar?
           </h2>
-        </div>
+          <div className="mt-6 max-w-3xl">
+            <ProgressiveTicketComposer
+              onSubmit={async (payload) => {
+                const ticket = await createTicket(payload);
+                setTickets((prev) => [ticket, ...prev]);
+              }}
+            />
+          </div>
+        </section>
       )}
 
-      {isStudent && (
-        <ProgressiveTicketComposer
-          onSubmit={async (payload) => {
-            const ticket = await createTicket(payload);
-            setTickets((prev) => [ticket, ...prev]);
-          }}
-        />
-      )}
-
-      {!isStudent && !loading && !error && <MetricsPanel tickets={tickets} />}
-
-      <section className="space-y-3">
-        <div>
-          <h3 className="font-medium">
-            {isStudent ? "Meus tickets" : "Tickets"}
-          </h3>
-          <p className="text-xs text-[var(--cf-muted)]">
-            Clique em um item para ver detalhes e ações
+      <section>
+        <div className="flex flex-col divide-y divide-[var(--cf-border)] border-b border-[var(--cf-border)] lg:flex-row lg:divide-x lg:divide-y-0">
+          <div className="grid min-w-0 flex-1 grid-cols-1 divide-y divide-[var(--cf-border)] sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+            <FilterSelect
+              label="Status"
+              value={status}
+              onValueChange={(value) => setStatus(value as Status | "all")}
+              options={[
+                { value: "all", label: "Todos" },
+                { value: "Aberto", label: "Aberto" },
+                { value: "Em andamento", label: "Em andamento" },
+                { value: "Aguardando aluno", label: "Aguardando aluno" },
+                { value: "Resolvido", label: "Resolvido" },
+                { value: "Fechado", label: "Fechado" },
+              ]}
+            />
+            <FilterSelect
+              label="Categoria"
+              value={category}
+              onValueChange={(value) => setCategory(value as Category | "all")}
+              options={[
+                { value: "all", label: "Todas" },
+                ...Object.entries(categoryLabel).map(([value, label]) => ({
+                  value,
+                  label,
+                })),
+              ]}
+            />
+            <FilterSelect
+              label="Prioridade"
+              value={priority}
+              onValueChange={(value) => setPriority(value as Priority | "all")}
+              options={[
+                { value: "all", label: "Todas" },
+                ...Object.entries(priorityLabel).map(([value, label]) => ({
+                  value,
+                  label,
+                })),
+              ]}
+            />
+            <button
+              type="button"
+              className="cursor-pointer px-6 py-3 text-left text-sm text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-950 disabled:cursor-default disabled:opacity-40 sm:px-8"
+              disabled={!filtering}
+              onClick={() => {
+                setStatus("all");
+                setCategory("all");
+                setPriority("all");
+              }}
+            >
+              Limpar filtros
+            </button>
+          </div>
+          <p className="flex shrink-0 items-center px-4 py-3 text-sm whitespace-nowrap text-zinc-500 tabular-nums">
+            {loading
+              ? "Carregando…"
+              : filtering
+                ? `${filtered.length} de ${tickets.length}`
+                : `${tickets.length} na fila`}
           </p>
         </div>
-        <TicketList tickets={tickets} loading={loading} error={error} />
+        <TicketList
+          tickets={filtered}
+          loading={loading}
+          error={error}
+          emptyLabel={
+            filtering
+              ? "Nenhum ticket com esses filtros."
+              : "Nenhum ticket ainda."
+          }
+        />
       </section>
     </div>
   );
@@ -130,6 +205,7 @@ function TicketDetailPage() {
     getTicket(Number(id))
       .then((row) => {
         if (alive) setTicket(row);
+        notifyTicketsChanged();
       })
       .catch((err: Error) => {
         if (alive) setError(err.message);
@@ -155,10 +231,12 @@ function TicketDetailPage() {
 
   return (
     <TicketDetail
+      key={ticket.id}
       ticket={ticket}
       onChanged={(next) => {
         if (next === null) navigate("/");
         else setTicket(next);
+        notifyTicketsChanged();
       }}
     />
   );

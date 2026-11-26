@@ -16,6 +16,25 @@ export type Actor = {
   role: "student" | "it";
 };
 
+export type TicketMessage = {
+  id: number;
+  author_user_id: string;
+  author_name: string;
+  author_role: "student" | "it";
+  body: string;
+  created_at: string;
+};
+
+export type TicketEvent = {
+  id: number;
+  actor_user_id: string;
+  actor_name: string;
+  actor_role: "student" | "it";
+  from_status: Status | null;
+  to_status: Status;
+  created_at: string;
+};
+
 export type Ticket = {
   id: number;
   title: string;
@@ -28,6 +47,9 @@ export type Ticket = {
   updated_at: string;
   allowed_transitions: Status[];
   allowed_patch_fields: string[];
+  messages?: TicketMessage[];
+  unread_message?: TicketMessage | null;
+  events?: TicketEvent[];
 };
 
 export type TicketCreate = {
@@ -78,4 +100,11 @@ export async function transitionTicket(id: number, to_status: Status) {
 
 export async function deleteTicket(id: number) {
   return request<void>(`/tickets/${id}`, { method: "DELETE" });
+}
+
+export async function postMessage(id: number, body: string) {
+  return request<Ticket>(`/tickets/${id}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
 }
