@@ -7,46 +7,56 @@ export function LoginScreen() {
   const { actors, setActor, loading, error } = useActor();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--cf-bg)] px-4">
-      <div className="animate-fade-up w-full max-w-md rounded-2xl border border-[var(--cf-border)] bg-white p-8 shadow-sm">
-        <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <BrandMark className="h-8" />
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Helpdesk</h1>
-            <p className="mt-1 text-sm text-[var(--cf-muted)]">
-              Selecione quem está usando o sistema
+    <div className="h-screen bg-[var(--cf-bg)] p-3 sm:p-4">
+      <div className="flex h-full min-h-0 flex-col overflow-hidden bg-white">
+        <header className="flex h-16 shrink-0 items-center border-b border-[var(--cf-border)] px-6 sm:px-8">
+          <BrandMark className="h-6" />
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-auto">
+          <div className="border-b border-[var(--cf-border)] px-6 py-10 sm:px-8">
+            <p className="font-display text-5xl leading-none font-medium tracking-tight text-zinc-950 sm:text-6xl">
+              Helpdesk
+            </p>
+            <p className="mt-4 max-w-md text-base text-[var(--cf-muted)]">
+              Selecione quem está usando o sistema.
             </p>
           </div>
-        </div>
 
-        {loading && (
-          <p className="text-center text-sm text-[var(--cf-muted)]">
-            Carregando…
-          </p>
-        )}
-        {error && <p className="text-center text-sm text-red-600">{error}</p>}
+          {loading && (
+            <p className="px-6 py-6 text-sm text-[var(--cf-muted)] sm:px-8">
+              Carregando…
+            </p>
+          )}
+          {error && (
+            <p className="px-6 py-6 text-sm text-red-600 sm:px-8">{error}</p>
+          )}
 
-        <ul className="space-y-3">
-          {actors.map((row, index) => (
-            <li key={row.id} className={`animate-fade-up stagger-${index + 1}`}>
-              <button
-                type="button"
-                data-testid={`login-${row.id}`}
-                onClick={() => setActor(row)}
-                className="group flex w-full items-center gap-3 rounded-xl border border-[var(--cf-border)] bg-white px-4 py-3 text-left transition duration-300 hover:border-[var(--inatel)] hover:shadow-md"
+          <ul className="divide-y divide-[var(--cf-border)]">
+            {actors.map((row, index) => (
+              <li
+                key={row.id}
+                className={`animate-fade-up stagger-${index + 1}`}
               >
-                <UserAvatar className="h-11 w-11" />
-                <span className="min-w-0 flex-1">
-                  <span className="block font-medium">{row.name}</span>
-                  <span className="block text-xs text-[var(--cf-muted)]">
-                    {row.role === "it" ? "Tecnologia da Informação" : "Aluno"}
+                <button
+                  type="button"
+                  data-testid={`login-${row.id}`}
+                  onClick={() => setActor(row)}
+                  className="group flex w-full cursor-pointer items-center gap-4 px-6 py-4 text-left transition duration-200 hover:bg-zinc-50 sm:px-8"
+                >
+                  <UserAvatar className="h-11 w-11" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">{row.name}</span>
+                    <span className="block text-xs text-[var(--cf-muted)]">
+                      {row.role === "it" ? "Tecnologia da Informação" : "Aluno"}
+                    </span>
                   </span>
-                </span>
-                <ChevronRight className="h-4 w-4 text-zinc-400 transition group-hover:text-[var(--inatel)]" />
-              </button>
-            </li>
-          ))}
-        </ul>
+                  <ChevronRight className="h-4 w-4 text-zinc-400 transition group-hover:text-zinc-950" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

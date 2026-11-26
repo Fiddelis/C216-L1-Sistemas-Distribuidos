@@ -26,7 +26,6 @@ test.describe("helpdesk live API", () => {
     await page
       .getByPlaceholder("O que está acontecendo?")
       .fill("Criado pelo Playwright");
-    await page.getByPlaceholder("O que está acontecendo?").press("Enter");
     await page.getByPlaceholder("Resumo curto do chamado").fill(title);
     await page.getByRole("button", { name: "Salvar" }).click();
 

@@ -1,4 +1,4 @@
-import { type FormEvent, type KeyboardEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { categoryLabel } from "@/lib/labels";
@@ -18,11 +18,13 @@ export function ProgressiveTicketComposer({ onSubmit }: Props) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function advanceFromDescription(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key !== "Enter" || event.shiftKey) return;
-    event.preventDefault();
-    if (description.trim().length < 3) return;
-    setStep(1);
+  function onDescriptionChange(value: string) {
+    setDescription(value);
+    if (value.trim().length === 0) {
+      setStep(0);
+      return;
+    }
+    setStep((current) => (current < 1 ? 1 : current));
   }
 
   function maybeShowSave(value = title) {
@@ -52,20 +54,19 @@ export function ProgressiveTicketComposer({ onSubmit }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-3xl">
+    <form onSubmit={handleSubmit} className="w-full">
       <label className="block">
-        <span className="mb-2 block text-center text-sm text-[var(--cf-muted)]">
-          Descreva o problema. Pressione Enter para continuar.
+        <span className="mb-2 block text-sm text-[var(--cf-muted)]">
+          Descreva o problema.
         </span>
-        <div className="rounded-full border border-[var(--cf-border)] bg-white shadow-sm transition duration-300 focus-within:border-[var(--inatel)] focus-within:shadow-md">
+        <div className="border border-[var(--cf-border)] bg-white transition duration-300 focus-within:border-[var(--inatel)]">
           <textarea
             id="compose-description"
             rows={1}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onKeyDown={advanceFromDescription}
+            onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder="O que está acontecendo?"
-            className="block max-h-32 w-full resize-none rounded-full border-0 bg-transparent px-5 py-3 text-sm leading-6 outline-none placeholder:text-zinc-400"
+            className="block max-h-32 w-full resize-none border-0 bg-transparent px-4 py-3 text-sm leading-6 outline-none placeholder:text-zinc-400"
           />
         </div>
       </label>
@@ -99,7 +100,7 @@ export function ProgressiveTicketComposer({ onSubmit }: Props) {
                   }
                 }}
                 placeholder="Resumo curto do chamado"
-                className="h-10 w-full rounded-lg border border-[var(--cf-border)] bg-white px-3 text-sm shadow-sm outline-none transition focus:border-[var(--inatel)]"
+                className="h-10 w-full border border-[var(--cf-border)] bg-white px-3 text-sm outline-none transition focus:border-[var(--inatel)]"
                 required={step >= 1}
               />
             </label>
