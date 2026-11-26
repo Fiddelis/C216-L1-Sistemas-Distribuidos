@@ -5,15 +5,15 @@ Revises: 0001_helpdesk
 Create Date: 2026-11-25
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0002_messages"
-down_revision: Union[str, Sequence[str], None] = "0001_helpdesk"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "0001_helpdesk"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -53,7 +53,10 @@ def upgrade() -> None:
             {
                 "ticket_id": wifi,
                 "author_user_id": "it-carla",
-                "body": "Testei o ponto do fundo e o sinal ainda cai. Consegue confirmar o horário da aula?",
+                "body": (
+                    "Testei o ponto do fundo e o sinal ainda cai. "
+                    "Consegue confirmar o horário da aula?"
+                ),
             }
         )
     if matlab is not None:
@@ -61,7 +64,10 @@ def upgrade() -> None:
             {
                 "ticket_id": matlab,
                 "author_user_id": "stu-ana",
-                "body": "A licença voltou no laboratório 2, mas no 1 ainda pede ativação.",
+                "body": (
+                    "A licença voltou no laboratório 2, "
+                    "mas no 1 ainda pede ativação."
+                ),
             }
         )
     if seeded:

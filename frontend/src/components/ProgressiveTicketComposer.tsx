@@ -24,7 +24,7 @@ export function ProgressiveTicketComposer({ onSubmit }: Props) {
       setStep(0);
       return;
     }
-    setStep((current) => (current < 1 ? 1 : current));
+    setStep((current) => (current === 0 ? 1 : current));
   }
 
   function maybeShowSave(value = title) {

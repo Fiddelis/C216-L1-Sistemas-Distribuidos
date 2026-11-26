@@ -7,9 +7,7 @@ import { useActor } from "@/lib/actor";
 function navClass(active: boolean) {
   return [
     "inline-flex items-center px-3 py-2 text-[11px] font-medium tracking-[0.18em] uppercase transition duration-200",
-    active
-      ? "bg-zinc-950 !text-white"
-      : "text-zinc-400 hover:text-zinc-950",
+    active ? "bg-zinc-950 !text-white" : "text-zinc-400 hover:text-zinc-950",
   ].join(" ");
 }
 
