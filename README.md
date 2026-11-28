@@ -2,6 +2,8 @@
 
 Helpdesk de TI do campus. O aluno abre um chamado e só vê os próprios. A equipe de TI vê a fila inteira e conduz o status. O acesso usa três usuários, sem login com senha: Ana Silva (`stu-ana`), Bruno Costa (`stu-bruno`) e Carla Mendes (`it-carla`). O frontend envia o usuário escolhido no header `X-Actor-Id`.
 
+Vídeo do projeto: https://youtu.be/uJ6pck7js5U
+
 ## Funcionalidades
 
 - Criar, listar, editar e excluir tickets. A exclusão pede confirmação.
